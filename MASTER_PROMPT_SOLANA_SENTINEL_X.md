@@ -149,3 +149,66 @@ H. Candidate Ranking: ترتيب الرموز بعد بوابات المخاطر
 ## 14. API والأمان والاعتمادية
 
 تحقق من المدخلات بـ schema validation، واستخدم pagination وحدود النتائج. تجنب SSRF؛ لا تسمح بـ URL حر لمزود خارجي. استخدم timeouts وretry محدود وbackoff وrate limiting. لا تسجل أسرارًا ولا تكشف stack traces. اجعل scheduler قابلًا للإيقاف وسجّل كل دورة. وفّر health/readiness/status وAPI versioning. افصل demo عن live. لا تفتح CORS للجميع دون حاجة، واستخدم headers مناسبة. لا يوجد endpoint للتداول أو التوقيع. امنع jobs المكررة والـ polling الكثيف وكرّر snapshots فقط وفق سياسة واضحة.
+
+## 15. الاختبارات المطلوبة — نفّذها فعليًا
+
+أنشئ docs/TEST_REPORT.md يسجل أوامر الاختبار ونتائجها الفعلية، ولا تكتب نتيجة غير منفذة.
+
+**اختبارات الوحدة:** BigInt وتحويل lamports/token units؛ فك ترميز bonding curve ورفض البيانات المشوهة؛ PDA والمالك والبرنامج؛ انتقالات lifecycle؛ provenance وstale detection؛ درجات المخاطر والفرصة والثقة وقابلية الخروج؛ HHI مع استبعاد الحسابات التجميعية؛ الرسوم والانزلاق؛ اتزان دفتر الحسابات؛ مقاييس backtesting؛ retry/cache/rate limits.
+
+**اختبارات التكامل:** adapters ببيانات fixtures محفوظة؛ RPC حي محدود إذا سمحت الشبكة مع فصل نتيجته عن fixtures؛ DEX Screener؛ GMGN قراءة فقط إن أمكن؛ تخزين واسترجاع ومigrations؛ API في حالات النجاح والفشل؛ استمرار النظام عند توقف مصدر؛ منع تكرار الرموز والأحداث والتنبيهات.
+
+**الأمان:** لا مفاتيح أو seed phrases أو أسرار في الملفات والسجلات؛ لا وظائف توقيع أو إرسال معاملات؛ لا مسارات buy/sell/swap؛ GMGN allowlist فقط؛ فحص تبعيات بأداة مجانية مناسبة إن توفرت؛ رفض المدخلات غير الصالحة وحدود الطلبات والبيانات المشوهة.
+
+**الواجهة:** build وTypeScript؛ smoke tests للصفحات؛ loading/error/empty/stale؛ RTL/LTR؛ إثبات أن القوائم والأزرار تستخدم API وليس بيانات ثابتة؛ تتبع رمز من الاكتشاف للتفاصيل والمخاطر.
+
+**الاستمرارية:** أعد تشغيل الخادم وتحقق من بقاء الإعدادات والسجل والأرصدة؛ اختبر migrations والنسخ الاحتياطي والاستعادة على قاعدة اختبار فقط؛ اختبر إغلاق التطبيق أثناء job وفشل RPC/GMGN/DEX.
+
+**الأداء:** قِس زمن API واستهلاك الذاكرة وpagination، ولا تطلق polling يخرق حدود المصادر. سجّل القياسات ولا تدّع أداءً ممتازًا دون قياس.
+
+## 16. حالة YumiCoin لاختبارات الانحدار فقط
+
+هذه بيانات واردة من تقرير سابق غير متحقق منه مستقلًا؛ استخدمها fixture اختبارية فقط، لا كحقيقة حية أو مرجع وحيد:
+- Signature: 28D1RYYVWJasuc4HYAajqJz21Zc6Dg5G29nMRwWuJneMSc7Xq1Pf3zp699zg5QZiRLCrEntEbKHHsq7914hGY68v
+- Mint: E48iWB6L7AMR681nA2Bpy2uf1XyxsWsDNboEcoZX3q6J
+- Claimed curve PDA: 6bBXE3Xqn3gnpRnPDDYofgCWbHqP43uSxbLU7SyKERnu
+- Claimed creator: 8S2gvoKUY9WnFu5aFEx9Xz3XTCuojWVpZK3YQnyUeRhL
+- Claimed Pump.fun program: 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P
+- Claimed slot: 456910629
+- Claimed block time: 2026-10-14T16:49:34Z
+- Claimed token: YumiCoin / Yumi, Token-2022, decimals 6, supply 1,000,000,000 tokens.
+
+أعد فحص المعاملة والحسابات عبر RPC إذا أمكن. لا تفترض صحة PDA أو المنشئ أو السلطات أو supply حتى تتحقق. عند تعذر الشبكة، سجل BLOCKED_BY_ENVIRONMENT. يجب أن تمنع اختبارات الانحدار: اعتبار رصيد PDA احتياطيًا اقتصاديًا مؤكدًا؛ خلط virtual وreal reserves؛ استخدام حد تخرج ثابت غير موثق؛ ادعاء DEX liquidity دون مجمع؛ احتساب curve/AMM كحائز فردي؛ اعتبار top 10 = 100% دون معرفة التغطية؛ وصف السعر المشتق بأنه تنفيذ حي؛ تحويل المجهول إلى صفر.
+
+## 17. المراحل التنفيذية
+
+1. فحص البيئة والمستودع، وإنشاء docs/ENVIRONMENT_AUDIT.md وdocs/ARCHITECTURE.md.
+2. إعداد TypeScript وlint/typecheck/build/test وlogging وhealth API وقاعدة البيانات والمigrations.
+3. بناء adapters وprovenance وtimeouts/retry/cache وحالة المزودين وfixtures.
+4. اكتشاف Pump.fun والتحقق من mint/PDA/account وفك الترميز الموثق وsnapshots وlifecycle.
+5. اكتشاف DEX وفصل سعر المنحنى عن السوق والتحقق من السيولة وقابلية الخروج.
+6. تدقيق GMGN والترخيص والتبعيات والتكلفة، ثم adapter قراءة فقط واختبارات منع التداول.
+7. تنفيذ Token-2022 والصلاحيات والتركيز وwallet graph والتدفق والدرجات والثقة.
+8. تنفيذ الاستراتيجيات A-H والتنبيهات ومنع التكرار وسجل الأحداث.
+9. تنفيذ دفتر Paper Trading والرسوم والانزلاق والمراكز والقيود.
+10. تنفيذ Backtesting والمقاييس واختبارات نزاهة البيانات.
+11. تنفيذ الصفحات المطلوبة وRTL/LTR وحالات الخطأ وربط API.
+12. تشغيل build وtypecheck والاختبارات وفحوص الأمان وsmoke tests؛ أصلح المشكلات وأعد الاختبارات المتأثرة. نفّذ تجربة حية محدودة إذا توفرت المصادر دون تجاوز القيود أو اختلاق نتائج.
+
+## 18. معايير القبول النهائية
+
+لا تقل إن المشروع مكتمل إلا بدليل على:
+- التثبيت والبناء والتشغيل وفق التوثيق.
+- health/readiness وقاعدة البيانات وmigrations دون فقد بيانات.
+- اكتشاف رمز من مصدر حقيقي إن سمحت البيئة، أو توثيق واضح لسبب التعذر.
+- تحقق on-chain مستقل مع slot/timing/provenance عند التوفر.
+- فك ترميز Pump.fun مبني على مخطط واختبارات، لا تخمين.
+- فصل virtual عن real reserves وعدم الاعتماد على حد تخرج ثابت غير موثق.
+- عدم اختلاق السعر والسيولة والحائزين.
+- GMGN اختياري وقراءة فقط دون مسار تداول.
+- درجات منفصلة وقابلة للتفسير.
+- واجهة مرتبطة بالبيانات الحقيقية أو تمييز واضح للـ mock/simulated.
+- Paper Trading بلا توقيع أو إرسال، والرصيد لا يعاد تمويله عند التشغيل.
+- Backtesting يمنع lookahead ويشرح قيود البيانات.
+- الاختبارات تعمل أو يوثق سبب التعذر.
+- لا أسرار في المستودع ولا نتائج مختلقة.
